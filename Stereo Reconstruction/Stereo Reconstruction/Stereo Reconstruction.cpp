@@ -12,30 +12,31 @@ using namespace cv;
 
 int main()
 {
-    //std::cout << "Hello World!\n";
-    //cv::Mat image = cv::imread("../img/sherry-christian-8Myh76_3M2U-unsplash.jpg");
-    //imshow("Display window", image);
-    //int k = waitKey(0); // Wait for a keystroke in the window
-    //if (k == 's')
-    //{
-    //    imwrite("starry_night.png", image);
-    //}
-    //return 0;
 
-    std::string image_path = samples::findFile("starry_night.jpg");
-    Mat img = imread(image_path, IMREAD_COLOR);
-    if (img.empty())
+    Mat image_array[2];
+    image_array[0] = cv::imread("../../data/pendulum1/im0.png");
+    image_array[1] = cv::imread("../../data/pendulum1/im1.png");
+    
+    if (image_array[0].empty() || image_array[1].empty())
     {
-        std::cout << "Could not read the image: " << image_path << std::endl;
+        std::cout << "Could not read the image: " << "../../data/pendulum1/im0.png" << std::endl;
         return 1;
     }
-    imshow("Display window", img);
-    int k = waitKey(0); // Wait for a keystroke in the window
-    if (k == 's')
+
+    for (size_t i = 0; i < 2; i++)
     {
-        imwrite("starry_night.png", img);
+        cv::namedWindow("image", WINDOW_NORMAL);
+        imshow("image", image_array[i]);
+        int k = waitKey(0); // Wait for a keystroke in the window
+        if (k == 's')
+        {
+            imwrite(i + ".png", image_array[i]);
+        }
+        
     }
+
     return 0;
+
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
