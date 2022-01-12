@@ -6,12 +6,15 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-#include "opencv2/features2d.hpp"
-#include "opencv2/core.hpp"
+#include <opencv2/features2d.hpp>
+#include <opencv2/core.hpp>
+#include <fstream>
+#include <string>
 
 
 
 using namespace cv;
+using namespace std;
 
 int main()
 {
@@ -41,15 +44,41 @@ int main()
     // return 0;
 
     std::cout << "Hello World!\n";
-    cv::Mat img1 = cv::imread("../img/data/artroom1/im0C.png", IMREAD_GRAYSCALE);
-    cv::Mat img2 = cv::imread("../img/data/artroom1/im1C.png", IMREAD_GRAYSCALE);
-  /*  if (img1.empty() || img2.empty())
+
+
+    // Reading the intrinsics 
+
+    fstream newfile;
+    std::string cam0;
+    std::string cam1;
+    newfile.open("../../data/artroom1/calib.txt", ios::in); //open a file to perform read operation using file object
+    if (newfile.is_open()) { //checking whether the file is open
+        for (int i = 0; i < 2; i++) {
+            if (i == 0) {
+                getline(newfile, cam0);
+            }
+            else {
+                getline(newfile, cam1);
+            }
+
+        }
+        newfile.close(); //close the file object.
+    }
+
+    cout << cam0 << endl;
+    cout << cam1 << endl;
+
+
+
+    cv::Mat img1 = cv::imread("../../data/artroom1/im0.png", IMREAD_GRAYSCALE);
+    cv::Mat img2 = cv::imread("../../data/artroom1/im1.png", IMREAD_GRAYSCALE);
+    if (img1.empty() || img2.empty())
     {
-        cout << "Could not open or find the image!\n" << endl;
-        parser.printMessage();
+        std::cout << "Could not open or find the image!\n" << std::endl;
+        //parser.printMessage();
         return -1;
-    }*/
-    //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
+    }
+    //-- Step 1: Detect the keypoints using ORB Detector, compute the descriptors
     int minHessian = 400;
     Ptr<FeatureDetector> detector = ORB::create();
     std::vector<KeyPoint> keypoints1, keypoints2;
@@ -85,13 +114,23 @@ int main()
     drawMatches(img1, keypoints1, img2, keypoints2, good_matches, img_matches, Scalar::all(-1),
         Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
     //-- Show detected matches
+    cv::namedWindow("Good Matches", WINDOW_NORMAL);
     imshow("Good Matches", img_matches);
 
     
 
 
     int k = waitKey(0); // Wait for a keystroke in the window
-   
+    if (k == 's')
+    {
+        imwrite("crosspond.png", img_matches);
+    }
+
+
+    
+
+
+
     return 0;
 
     //std::string image_path = samples::findFile("starry_night.jpg");
