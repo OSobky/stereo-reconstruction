@@ -137,6 +137,14 @@ int main()
         //parser.printMessage();
         return -1;
     }
+
+    // 
+
+    
+
+
+
+
     //-- Step 1: Detect the keypoints using ORB Detector, compute the descriptors
     int minHessian = 400;
     Ptr<FeatureDetector> detector = ORB::create();
@@ -144,6 +152,9 @@ int main()
     Mat descriptors1, descriptors2;
     detector->detectAndCompute(img1, noArray(), keypoints1, descriptors1);
     detector->detectAndCompute(img2, noArray(), keypoints2, descriptors2);
+
+    std::cout << "key points 1 size:  " << keypoints1.size() << std::endl;
+    std::cout << "key points 2 size:  " << keypoints2.size() << std::endl;
 
     cv::Mat output;
     cv::drawKeypoints(img1, keypoints1, output);
@@ -157,6 +168,7 @@ int main()
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
     std::vector< std::vector<DMatch> > knn_matches;
     matcher->knnMatch(descriptors1, descriptors2, knn_matches, 2);
+
 
     //-- Filter matches using the Lowe's ratio test
     const float ratio_thresh = 0.7f;
@@ -201,103 +213,163 @@ int main()
     cv::recoverPose(essential, points1, points2, calibMat, rotation, translation, inliers);
     cout << rotation << endl;
     cout << translation << endl;
+
+
+    // Compute disparity
+    cv::Mat disparity;
+    cv::Ptr<cv::StereoMatcher> pStereo = cv::StereoSGBM::create(0, 32, 5);
+    pStereo->compute(img1, img2, disparity);
+    cv::imwrite("disparity.jpg", disparity);
+
+    cv::Mat R1;
+    cv::Mat R2;
+    cv::Mat P1;
+    cv::Mat P2;
+    cv::Mat Q;
+    cv::Mat1d dis = (Mat1d(1,5) << 0, 0,0,0,0);
+
+    cv::stereoRectify(calibMat, dis, calibMat, dis, Size(1920, 1080), rotation, translation, R1, R2, P1, P2, Q);
+    cv::Mat pointClouds;
+
+    reprojectImageTo3D(disparity, pointClouds, Q);
+
+    cv::Mat color_img;
+
+    cv::cvtColor(img1, color_img, cv::COLOR_BGR2RGB);
+
+    Vec3b color = color_img.at<Vec3b>(Point(500, 500));
+    cout << "Abdooooo" << pointClouds.at<float>(0, 0) << endl;
+    cout << "Abdooooo" << pointClouds.size().height << endl;
+    cout << "color" <<  (int)color_img.at<cv::Vec3b>(500, 500)[0] << endl;
+ 
+
+    int count = pointClouds.size().height * pointClouds.size().width;
+
+    ofstream outfile("pointcloud.ply");
+    outfile << "ply\n" << "format ascii 1.0\n";
+    outfile << "element vertex '\'" << count << "\n";
+    outfile << "property float x\n" << "property float y\n" << "property float z\n" ;
+    outfile << "property uint8 red\n" << "property uint8 green\n" << "property uint8 blue\n"  ;
+    outfile << "end_header\n";
+
+
+    for (size_t i = 0; i < pointClouds.size().height; i++)
+    {
+        for (size_t j = 0; j < pointClouds.size().width; j++)
+        {
+            outfile << i << " ";
+            outfile << j << " ";
+            outfile << pointClouds.at<float>(i, j) << " ";
+            outfile << (int)color_img.at<cv::Vec3b>(i, j)[0] << " ";
+            outfile << (int)color_img.at<cv::Vec3b>(i, j)[1] << " ";
+            outfile << (int)color_img.at<cv::Vec3b>(i, j)[2] << " ";
+            outfile << "\n";
+        }
+    }
+    outfile.close();
+
+
+
     
     //cout << inliers << endl;
 
-    // compose projection matrix from R,T
-    cv::Mat projection2(3, 4, CV_32F); // the 3x4 projection matrix
-    rotation.copyTo(projection2(cv::Rect(0, 0, 3, 3)));
-    translation.copyTo(projection2.colRange(3, 4));
-    // compose generic projection matrix
-    cv::Mat projection1(3, 4, CV_32F, 0.); // the 3x4 projection matrix
-    cv::Mat diag(cv::Mat::eye(3, 3, CV_32F));
-    diag.copyTo(projection1(cv::Rect(0, 0, 3, 3)));
-    // to contain the inliers
-    std::vector<cv::Vec2d> inlierPts1;
-    std::vector<cv::Vec2d> inlierPts2;
-    // create inliers input point vector for triangulation
-    int j(0);
-    for (int i = 0; i < inliers.rows; i++) {
-        if (inliers.at<uchar>(i)) {
-            inlierPts1.push_back(cv::Vec2d(points1[i].x, points1[i].y));
-            inlierPts2.push_back(cv::Vec2d(points2[i].x, points2[i].y));
-        }
-    }
-
-    // // we multipied the calib martix with the projection matrices to compansate for the distortion in the image points 
-
-    projection1 = calibMat * projection1;
-    projection2 = calibMat * projection2;
-
-    cout << inlierPts1[0](0) << endl;
-
-    // doing the trangiulation 
-
-    std::vector<cv::Vec3f> points3D;
-
-    for (size_t i = 0; i < sizeof(inlierPts1); i++)
-    {
-        cv::Vec2d u1 = inlierPts1[i];
-        cv::Vec2d u2 = inlierPts2[i];
-        
-
-        cv::Matx44f A(  
-            u1(1) * projection1.at<float>(2, 0) - projection1.at<float>(1, 0),
-            u1(1) * projection1.at<float>(2, 1) - projection1.at<float>(1, 1),
-            u1(1) * projection1.at<float>(2, 2) - projection1.at<float>(1, 2),
-            u1(1) * projection1.at<float>(2, 3) - projection1.at<float>(1, 3),
-
-            projection1.at<float>(0, 0) - u1(0) * projection1.at<float>(2, 0),
-            projection1.at<float>(0, 1) - u1(0) * projection1.at<float>(2, 1),
-            projection1.at<float>(0, 2) - u1(0) * projection1.at<float>(2, 2),
-            projection1.at<float>(0, 3) - u1(0) * projection1.at<float>(2, 3),
-
-            u2(1)* projection2.at<float>(2, 0) - projection2.at<float>(1, 0),
-            u2(1)* projection2.at<float>(2, 1) - projection2.at<float>(1, 1),
-            u2(1)* projection2.at<float>(2, 2) - projection2.at<float>(1, 2),
-            u2(1)* projection2.at<float>(2, 3) - projection2.at<float>(1, 3),
-
-            projection2.at<float>(0, 0) - u2(0) * projection2.at<float>(2, 0),
-            projection2.at<float>(0, 1) - u2(0) * projection2.at<float>(2, 1),
-            projection2.at<float>(0, 2) - u2(0) * projection2.at<float>(2, 2),
-            projection2.at<float>(0, 3) - u2(0) * projection2.at<float>(2, 3)
-
-                        
-                       
-            
-            );
-
-        cv::Matx41f B;
-        cv::Vec4f X;
-        /*cout << A << endl;
-        cout << B << endl;*/
+    // ------------------------------------------- Triangulation -----------------------------------------------------
 
 
-        cv::SVD::solveZ(A, X);
-        
-        X = X * (1 / X[3]);
-        cv::Vec3f X_3 (X[0], X[1], X[2]);
+    //// compose projection matrix from R,T
+    //cv::Mat projection2(3, 4, CV_32F); // the 3x4 projection matrix
+    //rotation.copyTo(projection2(cv::Rect(0, 0, 3, 3)));
+    //translation.copyTo(projection2.colRange(3, 4));
+    //// compose generic projection matrix
+    //cv::Mat projection1(3, 4, CV_32F, 0.); // the 3x4 projection matrix
+    //cv::Mat diag(cv::Mat::eye(3, 3, CV_32F));
+    //diag.copyTo(projection1(cv::Rect(0, 0, 3, 3)));
+    //// to contain the inliers
+    //std::vector<cv::Vec2d> inlierPts1;
+    //std::vector<cv::Vec2d> inlierPts2;
+    //// create inliers input point vector for triangulation
+    //int j(0);
+    //for (int i = 0; i < inliers.rows; i++) {
+    //    if (inliers.at<uchar>(i)) {
+    //        inlierPts1.push_back(cv::Vec2d(points1[i].x, points1[i].y));
+    //        inlierPts2.push_back(cv::Vec2d(points2[i].x, points2[i].y));
+    //    }
+    //}
 
-        points3D.push_back(X_3);
-        
-        
-    }
+    //// // we multipied the calib martix with the projection matrices to compansate for the distortion in the image points 
 
-    
-    cout << "3D points :" << points3D.size() << endl;
+    //projection1 = calibMat * projection1;
+    //projection2 = calibMat * projection2;
 
-    for (size_t i = 0; i < points3D.size(); i++)
-    {
-        cout << points3D[i] << endl;
+    //cout << inlierPts1[0](0) << endl;
 
-    }
-    //cv::viz::Viz3d window; //creating a Viz window
-    ////Displaying the Coordinate Origin (0,0,0)
-    //window.showWidget("coordinate", viz::WCoordinateSystem());
-    //window.setBackgroundColor(cv::viz::Color::black());
-    ////Displaying the 3D points in green
-    //window.showWidget("points", viz::WCloud(points3D, viz::Color::green()));
-    //window.spin();
+    //// doing the trangiulation 
+
+    //std::vector<cv::Vec3f> points3D;
+
+    //for (size_t i = 0; i < sizeof(inlierPts1); i++)
+    //{
+    //    cv::Vec2d u1 = inlierPts1[i];
+    //    cv::Vec2d u2 = inlierPts2[i];
+    //    
+
+    //    cv::Matx44f A(  
+    //        u1(1) * projection1.at<float>(2, 0) - projection1.at<float>(1, 0),
+    //        u1(1) * projection1.at<float>(2, 1) - projection1.at<float>(1, 1),
+    //        u1(1) * projection1.at<float>(2, 2) - projection1.at<float>(1, 2),
+    //        u1(1) * projection1.at<float>(2, 3) - projection1.at<float>(1, 3),
+
+    //        projection1.at<float>(0, 0) - u1(0) * projection1.at<float>(2, 0),
+    //        projection1.at<float>(0, 1) - u1(0) * projection1.at<float>(2, 1),
+    //        projection1.at<float>(0, 2) - u1(0) * projection1.at<float>(2, 2),
+    //        projection1.at<float>(0, 3) - u1(0) * projection1.at<float>(2, 3),
+
+    //        u2(1)* projection2.at<float>(2, 0) - projection2.at<float>(1, 0),
+    //        u2(1)* projection2.at<float>(2, 1) - projection2.at<float>(1, 1),
+    //        u2(1)* projection2.at<float>(2, 2) - projection2.at<float>(1, 2),
+    //        u2(1)* projection2.at<float>(2, 3) - projection2.at<float>(1, 3),
+
+    //        projection2.at<float>(0, 0) - u2(0) * projection2.at<float>(2, 0),
+    //        projection2.at<float>(0, 1) - u2(0) * projection2.at<float>(2, 1),
+    //        projection2.at<float>(0, 2) - u2(0) * projection2.at<float>(2, 2),
+    //        projection2.at<float>(0, 3) - u2(0) * projection2.at<float>(2, 3)
+
+    //                    
+    //                   
+    //        
+    //        );
+
+    //    cv::Matx41f B;
+    //    cv::Vec4f X;
+    //    /*cout << A << endl;
+    //    cout << B << endl;*/
+
+
+    //    cv::SVD::solveZ(A, X);
+    //    
+    //    X = X * (1 / X[3]);
+    //    cv::Vec3f X_3 (X[0], X[1], X[2]);
+
+    //    points3D.push_back(X_3);
+    //    
+    //    
+    //}
+
+    //
+    //cout << "3D points :" << points3D.size() << endl;
+
+    //for (size_t i = 0; i < points3D.size(); i++)
+    //{
+    //    cout << points3D[i] << endl;
+
+    //}
+    ////cv::viz::Viz3d window; //creating a Viz window
+    //////Displaying the Coordinate Origin (0,0,0)
+    ////window.showWidget("coordinate", viz::WCoordinateSystem());
+    ////window.setBackgroundColor(cv::viz::Color::black());
+    //////Displaying the 3D points in green
+    ////window.showWidget("points", viz::WCloud(points3D, viz::Color::green()));
+    ////window.spin();
 
     return 0;
 
