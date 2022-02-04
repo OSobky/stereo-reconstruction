@@ -54,8 +54,8 @@ def Calculate_RT(img1,img2,cam_matrix):
     pts1 = np.int32(pts1)
     pts2 = np.int32(pts2)
     img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,good,None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-    plt.imshow(img3),plt.show()
-    print(len(pts1))
+    # plt.imshow(img3),plt.show()
+    # print(len(pts1))
     
     E , mask = cv2.findEssentialMat(pts1,pts2,cam_matrix) #Finding E matrix
     pts1 = pts1[mask.ravel()==1] #eliminate outliers
@@ -108,8 +108,8 @@ K = np.array([[1733.74, 0 ,792.27],[ 0, 1733.74, 541.89],[ 0, 0, 1]])
 #dist = np.load('./camera_params/dist.npy')
 
 #Specify image paths
-img_path1 = 'im0.png'
-img_path2 = 'im1.png'
+img_path1 = 'data/artroom1/im0.png'
+img_path2 = 'data/artroom1/im1.png'
 
 #Load pictures
 img_1 = cv2.imread(img_path1,0)
@@ -180,11 +180,32 @@ stereo.setDisp12MaxDiff(5)
 stereo.setMinDisparity(minDisparity)
 disparity_map = stereo.compute(img_1,img_2)
 disparity_map = disparity_map.astype(np.float32)
+# disparity_map = cv2.normalize(disparity_map, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
 disparity_map = (disparity_map/16.0 - minDisparity)/numDisparities
 
+groundtruth = cv2.imread('data/artroom1/disp0.pfm', cv2.IMREAD_UNCHANGED)
+
+# Remove infinite value to display
+groundtruth[groundtruth==np.inf] = 0
+
+# Normalize and convert to uint8
+groundtruth = cv2.normalize(groundtruth, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+# # Show
+# cv2.imshow("groundtruth", groundtruth)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
 plt.imshow(disparity_map,'gray')
+# plt.show()
+# plt.imshow(groundtruth)
+# plt.show()
+# breakpoint()
+# f, axarr = plt.subplots(2)
+# axarr[0].imshow(disparity_map,'gray')
+# axarr[1].imshow(groundtruth,'gray')
 plt.show()
-breakpoint()
+
 ##################################
 #Generate  point cloud. 
 print ("\nGenerating the 3D map...")
@@ -222,24 +243,31 @@ Q2 = np.float32([[1,0,0,0],
 
 # #Reproject points into 3D
 # Q=0
-# R,T = Calculate_RT(img_1,img_2,K)
-# _,_,_,_,QQ,_,_=cv2.stereoRectify(K, 0, K, 0,(h, w), R, T)
+R,T = Calculate_RT(img_1,img_2,K)
+_,_,_,_,QQ,_,_=cv2.stereoRectify(K, 0, K, 0,(h, w), R, T)
 
+points_3D_gt = cv2.reprojectImageTo3D(groundtruth, Q)
 points_3D = cv2.reprojectImageTo3D(disparity_map, Q)
+
 #Get color points
 colors = cv2.cvtColor(Colored, cv2.COLOR_BGR2RGB)
 
 #Get rid of points with value 0 (i.e no depth)
+mask_map_gt = groundtruth > 0
 mask_map = disparity_map > 0.25
 
 #Mask colors and points. 
+output_points_gt = points_3D[mask_map_gt]
+output_colors_gt = colors[mask_map_gt]
 output_points = points_3D[mask_map]
 output_colors = colors[mask_map]
-
+breakpoint()
 
 #Define name for output file
+output_file_gt = 'reconstructed-gt.ply'
 output_file = 'reconstructed.ply'
 
 #Generate point cloud 
 print ("\n Creating the output file... \n")
+create_output(output_points_gt, output_colors_gt, output_file_gt)
 create_output(output_points, output_colors, output_file)
