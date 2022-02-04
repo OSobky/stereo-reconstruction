@@ -173,28 +173,28 @@ def triangulation(pts1,pts2,cam_matrix,R,t , coloredImage):
 def stereo_reconstruct(img1,img2,colored_image1,colored_image2,cam_matrix):
     pts1 , pts2 = calculate_matches(img1,img2,cam_matrix)
     R , t ,pts1,pts2= Calculate_RT(pts1,pts2,cam_matrix)
-    # h,w = img1.shape[:2]
-    # _,_,_,_,QQ,_,_=cv2.stereoRectify(cam_matrix, 0, cam_matrix, 0,(h, w), R, t)
-    # disparity_map = disparityMap(img1,img2)
+    h,w = img1.shape[:2]
+    _,_,_,_,QQ,_,_=cv2.stereoRectify(cam_matrix, 0, cam_matrix, 0,(h, w), R, t)
+    disparity_map = disparityMap(img1,img2)
     
-    # points_3D = cv2.reprojectImageTo3D(disparity_map, QQ)
-    # #Get color points
+    points_3D = cv2.reprojectImageTo3D(disparity_map, QQ)
+    #Get color points
     colors = cv2.cvtColor(colored_image1, cv2.COLOR_BGR2RGB)
   
-    # #Get rid of points with value 0 (i.e no depth)
-    # mask_map = disparity_map > 0.25
+    #Get rid of points with value 0 (i.e no depth)
+    mask_map = disparity_map > 0.25
 
-    # #Mask colors and points. 
-    # output_points = points_3D[mask_map]
-    # output_colors = colors[mask_map]
+    #Mask colors and points. 
+    output_points = points_3D[mask_map]
+    output_colors = colors[mask_map]
 
 
-    # #Define name for output file
-    # output_file = 'reconstructedDisparity.ply'
+    #Define name for output file
+    output_file = 'reconstructedDisparity.ply'
 
-    # #Generate point cloud 
-    # print ("\n Creating the output file... \n")
-    # create_output(output_points, output_colors, output_file)
+    #Generate point cloud 
+    print ("\n Creating the output file... \n")
+    create_output(output_points, output_colors, output_file)
 
     points_3d ,colors= triangulation(pts1,pts2,cam_matrix,R,t,colors)
     output_file = 'reconstructedTriang.ply'
