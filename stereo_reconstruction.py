@@ -196,14 +196,13 @@ def stereo_reconstruct(img1,img2,colored_image1,colored_image2,cam_matrix):
     print ("\n Creating the output file... \n")
     create_output(output_points, output_colors, output_file)
 
+
     points_3d ,colors= triangulation(pts1,pts2,cam_matrix,R,t,colors)
     output_file = 'reconstructedTriang.ply'
 
     create_output(points_3d, colors, output_file)
     return
 
-def stereo_reconstruct_trig(img1,img2,camera_matrix):
-    return 
 
 
 
