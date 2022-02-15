@@ -13,7 +13,7 @@ def detectAndComp(img1, img2, d="SIFT", m="FLANN", lowe_ratio=0.95):
     detector = null
 
     if d == "SIFT":
-        detector = cv2.SIFT_create()
+        detector = cv2.xfeatures2d.SIFT_create()
     elif d == "SURF":
         detector = cv2.xfeatures2d.SURF_create(400)
     elif d == "ORB":
@@ -67,16 +67,16 @@ def detectAndComp(img1, img2, d="SIFT", m="FLANN", lowe_ratio=0.95):
     # ratio test as per Lowe's paper
     #getting the matched points in appropriate format
     MatchesList=[]
-    for i,(m,n) in enumerate(matches):
-        if m.distance < lowe_ratio*n.distance:
-            good.append([m])
-            pts2.append(kp2[m.trainIdx].pt)
-            pts1.append(kp1[m.queryIdx].pt)
-            MatchesList.append(m)
+    for i,(m2,n) in enumerate(matches):
+        if m2.distance < lowe_ratio*n.distance:
+            good.append([m2])
+            pts2.append(kp2[m2.trainIdx].pt)
+            pts1.append(kp1[m2.queryIdx].pt)
+            MatchesList.append(m2)
     
     pts1 = np.int32(pts1)
     pts2 = np.int32(pts2)
-    print(np.array(good).shape)
+    print("Detector: ", d, "Mathcer: ", m , np.array(good).shape)
     img3 = cv2.drawMatchesKnn(img1,kp1,img2,kp2,good,None,flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     plt.imshow(img3),plt.show()
     # print(len(pts1))
@@ -89,5 +89,5 @@ img_path2 = 'data/artroom1/im1.png'
 img1 = cv2.imread(img_path1,0)
 img2 = cv2.imread(img_path2,0)
 
-detectAndComp(img1, img2, d="SURF", m="BT", lowe_ratio=0.75)
+detectAndComp(img1, img2, d="ORB", m="FLANN", lowe_ratio=0.75)
 
