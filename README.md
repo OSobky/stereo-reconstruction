@@ -22,15 +22,22 @@
 - open3d
 
 ### Table of Contents
+
     .
-    ├── ...
-    ├── docs                    # Documentation files (alternatively `doc`)
-    │   ├── TOC.md              # Table of contents
-    │   ├── faq.md              # Frequently asked questions
-    │   ├── misc.md             # Miscellaneous information
-    │   ├── usage.md            # Getting started guide
-    │   └── ...                 # etc.
-    └── ...
+    ├── stereo_reconstruction.py     # containing the whole pipline of project including the sparse and dense implementation
+    ├── matching_algorithms.py       # containing the the different matching algorithms
+    ├── data                         # containing input images and camera calibrations
+    │   ├── calib.txt                # camera calibrations
+    │   ├── im0.png                  # first view of an image
+    │   └── im1.png                  # second view of an image 
+    ├── Figures                      # figures
+    │   ├── Dense.gif                # Dense output figure
+    │   ├── disparity.png            # Disparity map output figure
+    │   ├── ORB-FLANN.png            # ORB-FLANN output figure
+    │   ├── SIFT-FLANN.png           # SIFT-FLANN output figure
+    │   ├── Sparse.gif               # Sparse output figure
+    │   └── SURF-FLANN.png           # SURF-FLANN output figure
+    └── README.md
 
 
 ### How to Install and Run the Project
