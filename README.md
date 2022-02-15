@@ -22,21 +22,21 @@
 - open3d
 
 # Table of Contents
-.
-├── stereo_reconstruction.py     # containing the whole pipline of project including the sparse and dense implementation
-├── matching_algorithms.py       # containing the the different matching algorithms
-├── data                         # containing input images and camera calibrations
-│   ├── calib.txt                # camera calibrations
-│   ├── im0.png                  # first view of an image
-│   └── im1.png                  # second view of an image 
-├── Figures                      # figures
-│   ├── Dense.gif                # Dense output figure
-│   ├── disparity.png            # Disparity map output figure
-│   ├── ORB-FLANN.png            # ORB-FLANN output figure
-│   ├── SIFT-FLANN.png           # SIFT-FLANN output figure
-│   ├── Sparse.gif               # Sparse output figure
-│   └── SURF-FLANN.png           # SURF-FLANN output figure
-└── README.md
+  .
+  ├── stereo_reconstruction.py     # containing the whole pipline of project including the sparse and dense implementation
+  ├── matching_algorithms.py       # containing the the different matching algorithms
+  ├── data                         # containing input images and camera calibrations
+  │   ├── calib.txt                # camera calibrations
+  │   ├── im0.png                  # first view of an image
+  │   └── im1.png                  # second view of an image 
+  ├── Figures                      # figures
+  │   ├── Dense.gif                # Dense output figure
+  │   ├── disparity.png            # Disparity map output figure
+  │   ├── ORB-FLANN.png            # ORB-FLANN output figure
+  │   ├── SIFT-FLANN.png           # SIFT-FLANN output figure
+  │   ├── Sparse.gif               # Sparse output figure
+  │   └── SURF-FLANN.png           # SURF-FLANN output figure
+  └── README.md
 
 
 # How to Install and Run the Project
@@ -50,8 +50,10 @@ change the paths inside the stereo_reconstruction.py for the input files which a
 # How to Experiment with different matching algorithms  
 A specific library required for running the matching_algorithm.py file. please run the following two commands
 
+```python
 pip install opencv-python==3.4.2.16
 pip install opencv-contrib-python==3.4.2.16
+```
 
 inside the matching_algorithm.py you can change the local feature extraction algorithms to choose between different choices which are: SIFT,SURF,& ORB.
 In addition you can also change the matching algorithms  to choose between different choices which are: FLANN-based matcher and Brute Force matcher.
